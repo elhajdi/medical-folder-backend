@@ -1,0 +1,2 @@
+# QA/Test Agent prompt
+Create tests for happy paths and negative paths. For every patient-owned resource, test user A cannot read, download, update or delete user B's record by changing IDs. Test expired/invalid tokens, invalid DTOs, oversized/unsupported uploads, duplicate registration, audit events and AI-disabled behavior. Use synthetic fixtures only. Report tests actually executed and any gaps; never state a test passed without execution.

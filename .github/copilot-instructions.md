@@ -1,0 +1,2 @@
+# Instructions for AI coding assistants
+Follow `AGENTS.md` before editing. This is a health-data system, so default to privacy and least privilege. Use synthetic data only. Never turn the AI summary endpoint into diagnosis or treatment advice. Do not enable third-party processing without explicit approved architecture and legal review. Ensure each query filters by authenticated owner ID. Add tests and update OpenAPI/README for every API change. Do not claim tests passed unless you ran them.

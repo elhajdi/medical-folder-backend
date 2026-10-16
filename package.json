@@ -1,0 +1,34 @@
+{
+  "name": "morocco-health-record-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend-first prototype for a patient-controlled health record app",
+  "scripts": {
+    "start:dev": "nest start --watch",
+    "start:dev:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma && prisma db push --schema prisma/sqlite/schema.prisma && nest start --watch",
+    "start": "node dist/main.js",
+    "build": "nest build",
+    "lint": "eslint \"src/**/*.ts\"",
+    "test": "jest",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma",
+    "prisma:push:sqlite": "prisma db push --schema prisma/sqlite/schema.prisma",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.15", "@nestjs/config": "^3.3.0", "@nestjs/core": "^10.4.15",
+    "@nestjs/jwt": "^10.2.0", "@nestjs/platform-express": "^10.4.15", "@nestjs/swagger": "^8.1.0",
+    "@nestjs/throttler": "^6.4.0", "@prisma/client": "^6.1.0", "bcrypt": "^5.1.1",
+    "class-transformer": "^0.5.1", "class-validator": "^0.14.1", "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1", "reflect-metadata": "^0.2.2", "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.9", "@nestjs/schematics": "^10.2.3", "@nestjs/testing": "^10.4.15",
+    "@types/bcrypt": "^5.0.2", "@types/express": "^5.0.0", "@types/jest": "^29.5.14",
+    "@types/multer": "^1.4.12", "@types/node": "^22.10.2", "jest": "^29.7.0",
+    "prisma": "^6.1.0", "ts-jest": "^29.2.5", "ts-node": "^10.9.2", "typescript": "^5.7.2"
+  },
+  "jest": { "moduleFileExtensions": ["js", "json", "ts"], "rootDir": ".", "testRegex": ".spec.ts$", "transform": { "^.+\\.(t|j)s$": "ts-jest" }, "testEnvironment": "node" }
+}

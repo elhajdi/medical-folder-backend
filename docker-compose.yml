@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: healthapp
+      POSTGRES_USER: healthapp
+      POSTGRES_PASSWORD: healthapp_dev_password
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthapp -d healthapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  pgdata:

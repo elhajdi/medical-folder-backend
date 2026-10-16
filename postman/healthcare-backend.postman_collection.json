@@ -1,0 +1,403 @@
+{
+  "info": {
+    "_postman_id": "5f99a253-6353-4b7f-9ec3-7632a02fa70e",
+    "name": "Morocco Patient Health Record API",
+    "description": "Postman requests for the local NestJS API. Uses synthetic test values only. Do not use real patient data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "secondDocumentId",
+      "value": ""
+    },
+    {
+      "key": "medicationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Get health status",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register synthetic test user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo-user@example.test\",\n  \"password\": \"Synthetic-Test-Password-123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/auth/register"
+          }
+        },
+        {
+          "name": "Log in synthetic test user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.accessToken) pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo-user@example.test\",\n  \"password\": \"Synthetic-Test-Password-123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get my profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/profile"
+          }
+        },
+        {
+          "name": "Update my profile (synthetic values)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Synthetic\",\n  \"lastName\": \"Example\",\n  \"preferredLanguage\": \"en\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "List my documents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/documents?type=LAB_RESULT",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "LAB_RESULT",
+                  "description": "Optional document type filter."
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload synthetic test document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.id) pm.collectionVariables.set('documentId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "type",
+                  "value": "OTHER",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Synthetic API test file",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Synthetic test fixture; not a patient document.",
+                  "type": "text"
+                },
+                {
+                  "key": "documentDate",
+                  "value": "2025-01-01",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/documents/upload",
+            "description": "Select a synthetic PDF, JPEG, or PNG file in Postman. Do not upload real medical documents."
+          }
+        },
+        {
+          "name": "Link two of my documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDocumentId\": \"{{documentId}}\",\n  \"toDocumentId\": \"{{secondDocumentId}}\",\n  \"relationship\": \"synthetic-test-link\",\n  \"note\": \"Synthetic test data only.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/documents/links"
+          }
+        },
+        {
+          "name": "List links for a document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/documents/{{documentId}}/links"
+          }
+        },
+        {
+          "name": "Download my document",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/documents/{{documentId}}/download"
+          }
+        },
+        {
+          "name": "Delete my document",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/documents/{{documentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medications",
+      "item": [
+        {
+          "name": "List my medication plans",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/medications"
+          }
+        },
+        {
+          "name": "Create synthetic medication plan entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.id) pm.collectionVariables.set('medicationId', body.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Synthetic demo entry\",\n  \"dosage\": \"Synthetic test value; not for use\",\n  \"instructions\": \"Synthetic API testing only.\",\n  \"startDate\": \"2025-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/medications"
+          }
+        },
+        {
+          "name": "Update my medication plan",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"instructions\": \"Updated synthetic test value.\",\n  \"status\": \"PAUSED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/medications/{{medicationId}}"
+          }
+        },
+        {
+          "name": "Delete my medication plan",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/v1/medications/{{medicationId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI assistance",
+      "item": [
+        {
+          "name": "Request disabled medical-history summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentIds\": [\"{{documentId}}\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/ai/medical-history-summary",
+            "description": "This endpoint is a disabled stub. It does not generate clinical conclusions or call an AI provider."
+          }
+        }
+      ]
+    }
+  ]
+}
