@@ -18,12 +18,15 @@ export interface DownloadedCloudFile {
 }
 
 export interface CloudStorageProvider {
-  readonly providerName: 'google-drive' | 'microsoft-onedrive';
+  readonly providerName: "google-drive" | "microsoft-onedrive";
 
-  listAuthorizedFiles(connectionRef: string, options?: {
-    pageToken?: string;
-    pageSize?: number;
-  }): Promise<{ files: AuthorizedCloudFile[]; nextPageToken?: string }>;
+  listAuthorizedFiles(
+    connectionRef: string,
+    options?: {
+      pageToken?: string;
+      pageSize?: number;
+    },
+  ): Promise<{ files: AuthorizedCloudFile[]; nextPageToken?: string }>;
 
   downloadAuthorizedFile(
     connectionRef: string,

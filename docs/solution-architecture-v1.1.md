@@ -11,6 +11,7 @@ Medical Folder is a backend for organizing patient-authorized medical informatio
 A provider-neutral `CloudStorageProvider` boundary isolates Google Drive from the rest of the application and allows a future Microsoft OneDrive adapter without coupling processing logic to a provider SDK.
 
 The system separates:
+
 1. **Account and operational data** — identifiable, access-controlled data needed to operate the service.
 2. **Transient processing data** — downloaded bytes, OCR output, extraction candidates, and job intermediates with strict retention and purge rules.
 3. **Anonymous research/analytics dataset** — a separate store containing only allowlisted structured observations after a documented re-identification-risk assessment. Removing names alone is not anonymization.
@@ -20,6 +21,7 @@ The current provider and anonymization components added in this update are **int
 ## 2. Goals and non-goals
 
 ### Goals
+
 - Connect to a patient's Google Drive with explicit authorization and least-privilege scopes.
 - Keep original files in the patient's Drive by default.
 - Extract selected medical facts through an auditable, asynchronous pipeline.
@@ -28,6 +30,7 @@ The current provider and anonymization components added in this update are **int
 - Keep cloud provider integration replaceable for OneDrive in a later phase.
 
 ### Non-goals for this release
+
 - A certified electronic health record or clinical decision-support system.
 - Automated diagnosis, treatment recommendations, or emergency triage.
 - A guarantee that any dataset is legally anonymous merely because identifiers were removed.
@@ -73,6 +76,7 @@ Audit events / monitoring (no clinical payloads or tokens)
 ```
 
 ### Logical components
+
 - **API layer:** validates requests, enforces authentication and authorization, applies rate limits.
 - **Identity and consent:** records authorization and the purpose/scope of each processing job.
 - **Cloud storage adapter:** fetches user-authorized content through provider-specific APIs.
@@ -86,9 +90,11 @@ Audit events / monitoring (no clinical payloads or tokens)
 ## 4. Cloud storage and provider abstraction
 
 ### Initial provider: Google Drive
+
 The user grants access through a clear OAuth consent flow. Request the narrowest scopes compatible with the actual feature; prefer per-file or app-created-file access when it meets the product need. Store refresh/access credentials only in a managed secrets or encrypted credential store, restrict service access, rotate/revoke credentials where possible, and never log tokens.
 
 The Google Drive adapter must:
+
 - verify the connected account and file permissions;
 - allow only supported file types and size limits;
 - fetch only files the user explicitly selected or authorized;
@@ -97,9 +103,11 @@ The Google Drive adapter must:
 - return controlled errors and fail closed if authorization or verification fails.
 
 ### Future provider: Microsoft OneDrive
+
 Implement OneDrive behind the same provider interface after a separate scope, consent, security, and data-protection review. Do not build provider-specific assumptions into jobs or domain models.
 
 ### Proposed interface
+
 - `listAuthorizedFiles(...)`
 - `downloadAuthorizedFile(...)`
 - `getFileMetadata(...)`
@@ -121,6 +129,7 @@ This is a conceptual contract; signatures and implementation details should be r
 10. The user receives job status and, if product functionality requires it, a user-facing summary. Do not persist a source document copy as a side effect.
 
 ### Temporary data policy
+
 - Encrypt in transit and at rest; use isolated per-job storage and least-privilege access.
 - Set a short maximum TTL and enforce cleanup with a scheduled sweeper plus lifecycle policies.
 - Purge on success, failure, cancellation, and expired jobs; retries must not extend retention indefinitely.
@@ -133,6 +142,7 @@ This is a conceptual contract; signatures and implementation details should be r
 The dataset is intended for aggregate analytics or research only after governance approval. It must be physically or logically separated from account-linked tables, credentials, source file references, and job records.
 
 ### Prohibited fields
+
 - patient name, email, phone, address, national identifier, account/user ID;
 - source document ID, Google Drive file ID, OneDrive item ID, or a reversible lookup key;
 - raw document, OCR text, free-text clinical notes, embedded images, or document URL;
@@ -141,9 +151,11 @@ The dataset is intended for aggregate analytics or research only after governanc
 - any mapping table that allows the anonymous row to be linked back to a person.
 
 ### Candidate fields (not automatically approved)
+
 Only fields required for a clearly defined purpose, such as broad age band, generalized observation category, normalized unit/value band, or coarse time period. Health values themselves can be identifying when rare or combined with other attributes. Every field and combination needs review.
 
 ### Required controls
+
 - Maintain a versioned allowlist and documented purpose for each field.
 - Assess singling-out, linkability, and inference risks, including rare diseases and small cohorts.
 - Generalize, suppress, aggregate, or reject high-risk records; use minimum cohort thresholds where appropriate.
@@ -155,7 +167,9 @@ Only fields required for a clearly defined purpose, such as broad age band, gene
 ## 7. Data model boundaries
 
 ### Account-linked operational store
+
 Potential entities:
+
 - `UserAccount` — account identity and settings.
 - `CloudConnection` — provider, encrypted credential reference, scopes, connection state.
 - `ConsentRecord` — purpose, scope, version, timestamp, withdrawal state.
@@ -165,7 +179,9 @@ Potential entities:
 Do not store raw clinical documents by default. Any persistent user-facing extracted health record would be a separate product requirement requiring explicit consent, retention policy, access controls, export/delete behavior, and legal review; it must not be mixed into the anonymous dataset.
 
 ### Anonymous observation store
+
 Potential fields are only those approved by the allowlist, such as:
+
 - `observation_category`
 - `normalized_value` or a reviewed value band
 - `normalized_unit`
@@ -190,6 +206,7 @@ These routes are proposed design examples, not claims that they already exist in
 ## 9. Account deletion, consent withdrawal, and source files
 
 On account deletion or relevant consent withdrawal:
+
 1. stop accepting new processing jobs;
 2. cancel or terminate queued/running jobs;
 3. purge transient files, OCR text, extraction candidates, caches, and temporary artifacts;
@@ -215,6 +232,7 @@ On account deletion or relevant consent withdrawal:
 ## 11. Moroccan legal and governance workstream
 
 Before processing real patient data, qualified Moroccan counsel and a privacy lead must assess:
+
 - requirements under **Law 09-08** and applicable CNDP formalities, including whether the intended processing needs declarations, authorization, or other steps;
 - whether hosting, support access, processors, or backups create cross-border transfer issues;
 - the applicability of **Law 05-20** and related cybersecurity requirements to the specific organization/service;
@@ -235,33 +253,39 @@ This architecture is not legal advice and does not determine compliance. Do not 
 ## 13. Delivery plan
 
 ### Phase 0 — governance and threat model
+
 - Define purpose, data flows, retention, consent, and allowed observation fields.
 - Complete legal/privacy and clinical safety reviews.
 - Define a threat model and acceptance criteria.
 
 ### Phase 1 — safe skeleton
+
 - Authentication/authorization and consent model.
 - Provider interface and Google Drive adapter with least-privilege OAuth.
 - Job orchestration and encrypted temporary workspace.
 - Purge workflow, audit events, and synthetic-data test suite.
 
 ### Phase 2 — extraction
+
 - Sandboxed parsing/OCR and schema validation.
 - Confidence and provenance rules in the transient boundary.
 - Adversarial file testing and deletion-failure tests.
 
 ### Phase 3 — anonymous dataset (only after approval)
+
 - Independent risk-reviewed allowlist and gateway implementation.
 - Separation of credentials, schema, network policy, and monitoring.
 - Re-identification-risk testing and documented approval.
 
 ### Phase 4 — future OneDrive support
+
 - Implement and review OneDrive adapter independently.
 - Repeat consent, scope, threat, privacy, and integration tests.
 
 ## 14. Release acceptance criteria
 
 Do not release with real health data until all are true:
+
 - OAuth scopes are least-privilege and consent is understandable.
 - No original documents or raw OCR are retained by default.
 - Temporary artifacts are purged on all terminal paths, and purge failures alert.
@@ -277,3 +301,75 @@ Do not release with real health data until all are true:
 The accompanying backend archive updates documentation and adds a provider abstraction plus fail-closed scaffolding. The Google Drive provider and anonymization gateway are intentionally placeholders; they do not perform a real OAuth flow, download a file, OCR a document, or anonymize health data. Route names and data models in this document are proposals unless confirmed in the source code.
 
 **Until production controls are implemented and independently reviewed, use synthetic data only.**
+
+## 14. Patient prescription-to-reminder scenario (v1.2 review addendum)
+
+### 14.1 Intended user journey
+
+1. Patient visits a clinician; the consultation itself is outside the app unless a future clinician integration is added.
+2. Clinician issues a prescription.
+3. Patient scans or selects the prescription in the mobile app.
+4. Backend validates the file, creates a processing job, and extracts candidate fields using OCR/document parsing.
+5. Patient reviews the extracted medication name, dosage, frequency, timing, start/end dates, and instructions.
+6. The original prescription is uploaded to the patient's authorized Google Drive location. The app stores only minimum personal-document metadata and provider references needed for the patient's own document list.
+7. A separately reviewed anonymization policy may approve limited structured data for a separate anonymous dataset. If the policy is unavailable or uncertain, nothing is written.
+8. A medication plan is proposed from confirmed details. Extracted suggestions are not an active treatment schedule until the patient confirms them; ambiguous or high-risk instructions require clarification from a clinician or pharmacist.
+9. After confirmation, the app saves a versioned schedule and creates due occurrences. A reliable worker sends generic reminders and records delivery attempts. Patient-marked taken/skipped/missed events are self-reported, not proof of ingestion.
+
+### 14.2 Scenario coverage audit against the v1.1 code archive
+
+| Step                                      | Architecture coverage                                            | Code status in v1.1 archive                                                 |
+| ----------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Doctor visit / prescription issued        | Context only; external clinician workflow                        | Not implemented                                                             |
+| Scan/upload prescription                  | Document ingestion designed                                      | Authenticated local upload exists; stores on backend disk, not Google Drive |
+| OCR and structured extraction             | Designed as a processing pipeline                                | Not implemented; no OCR worker or prescription parser found                 |
+| Store anonymous data                      | Separate store and fail-closed policy designed                   | No anonymous persistence pipeline/schema found; gateway always returns null |
+| Upload original to patient's Google Drive | Provider abstraction and Drive-first design documented           | Provider methods throw “not implemented”; no OAuth/upload flow              |
+| Generate medication plan                  | Planner and confirmation designed                                | Medication CRUD exists; no prescription-to-plan generation                  |
+| Schedule reminders and notify             | Queue, outbox, idempotency, timezone and retry design documented | Reminder data model exists; no scheduler/worker/outbox/push provider found  |
+
+This table describes the inspected archive, not a claim about a separately deployed environment or later repository commits.
+
+### 14.3 Required implementation work
+
+**P0 — safe data path**
+
+- Resolve the mismatch between Drive-first architecture and current `POST /documents/upload`, which stores files on backend disk.
+- Implement Google OAuth/PKCE, least-privilege scopes, token encryption/rotation/revocation, explicit file selection, upload, and provider error handling.
+- Add an asynchronous processing job with file validation, malware scanning, OCR, structured extraction, schema validation, retries, and enforced purge of transient bytes/text on success, failure, cancellation, and timeout.
+- Do not persist raw OCR text or extracted sensitive fields in the anonymous dataset. Any persistent patient-facing extracted record must have its own approved purpose, retention policy, access controls, and deletion/export behavior.
+
+**P1 — safe medication plan**
+
+- Add extraction candidates with field-level confidence and source provenance.
+- Require patient review/confirmation before activating any extracted schedule. Ambiguous/high-risk directions must be clarified with a clinician or pharmacist rather than guessed.
+- Link confirmed medications to source documents without placing source identifiers in the anonymous dataset.
+- Store schedule version, timezone (profile default `Africa/Casablanca`), start/end semantics, frequency, dose instructions, and confirmation timestamp.
+
+**P1 — dependable reminders**
+
+- Add schedule occurrences, dose events, delivery attempts, and a transactional outbox or equivalent durable dispatch design.
+- Implement scheduler/worker and push provider, retries with backoff, dead-letter handling, delivery status, permission checks, and idempotency keys.
+- Revoke pending occurrences for old schedule versions after edits.
+- Keep push payloads generic and avoid medication names/doses on lock screens by default.
+
+**P2 — anonymous data**
+
+- Define the research/analytics purpose and minimal allowlisted schema before enabling writes.
+- Conduct re-identification risk review and test the anonymization policy. Until approved, keep fail-closed behavior and write no anonymous observations.
+- Review retention, deletion, patient disclosure, and applicable legal basis with qualified privacy/legal reviewers.
+
+### 14.4 Acceptance criteria
+
+- A synthetic prescription can be scanned and securely processed without retaining original bytes or raw OCR beyond the documented transient lifetime.
+- Extracted fields are shown as unconfirmed candidates with source provenance; no schedule activates without confirmation.
+- The original document is stored in the authorized patient's Google Drive and is accessible only within the patient's granted authorization.
+- Processing failure or timeout purges transient artifacts and leaves no partial anonymous write.
+- Unknown/unapproved fields cause anonymous-data writes to be rejected.
+- A confirmed schedule produces one reminder per due occurrence, respects timezone, and handles edits, retries, offline devices, and disabled notifications.
+- Cross-patient authorization, auditability, retention/deletion, and failure-path tests pass.
+- Use synthetic data only until security, privacy, legal, and clinical reviews approve real-data processing.
+
+### 14.5 Readiness decision
+
+The architecture covers the intended journey at design level, but the v1.1 backend is a starter scaffold, not an end-to-end implementation. Do not use real patient prescriptions until the missing integrations, processing lifecycle, clinical confirmation, notification delivery, and governance reviews are implemented and tested.

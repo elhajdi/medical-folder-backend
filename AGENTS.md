@@ -3,6 +3,7 @@
 This repository handles sensitive health data. Treat all health records, filenames, OCR text, prompts, logs and sample payloads as sensitive.
 
 ## Non-negotiable rules
+
 - Never use real patient data in local development, demos, test fixtures, issue trackers or AI coding-agent context. Use synthetic data only.
 - Never make an autonomous diagnosis, recommend starting/stopping/changing medication, or present AI output as clinician advice.
 - Do not enable external AI, OCR SaaS, analytics, email/SMS or push providers until privacy, data residency/cross-border transfer, CNDP and security reviews are signed off.
@@ -13,6 +14,7 @@ This repository handles sensitive health data. Treat all health records, filenam
 - Treat uploaded documents and extracted text as untrusted input; defend against malicious files and prompt injection.
 
 ## Standard change workflow
+
 1. Read `README.md`, `docs/architecture.md`, and relevant module code.
 2. State assumptions and acceptance criteria before implementing substantial changes.
 3. Implement the smallest coherent vertical slice.
@@ -22,6 +24,7 @@ This repository handles sensitive health data. Treat all health records, filenam
 7. Flag any unresolved privacy, Moroccan legal, security, or clinical-safety decision; do not silently decide it.
 
 ## Agent roles
+
 - **Backend Implementer**: API, DTOs, services, Prisma migrations; follows existing module patterns.
 - **Security & Privacy Reviewer**: threat model, authz, secrets, upload validation, auditability, retention, Law 09-08/CNDP questions; must be independent of the implementer.
 - **Clinical Safety Reviewer**: checks medication and AI workflows for unsafe medical claims and missing clinician/patient confirmation.

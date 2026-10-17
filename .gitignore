@@ -4,6 +4,7 @@ dist/
 var/
 coverage/
 *.log
-prisma/**/*.db
-prisma/**/*.db-journal
 .DS_Store
+.prisma
+prisma/sqlite/
+.vscode/

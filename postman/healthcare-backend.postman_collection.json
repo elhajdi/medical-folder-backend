@@ -179,14 +179,8 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/api/v1/documents?type=LAB_RESULT",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "documents"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "documents"],
               "query": [
                 {
                   "key": "type",

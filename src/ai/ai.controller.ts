@@ -1,8 +1,74 @@
-import { Body, Controller, Post, Req, UseGuards, BadRequestException } from '@nestjs/common'; import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'; import { IsArray, IsString, ArrayMinSize, ArrayMaxSize } from 'class-validator'; import { PrismaService } from '../prisma/prisma.module'; import { JwtAuthGuard } from '../auth/jwt-auth.guard'; import { AuditService } from '../audit/audit.module';
-class SummaryDto { @IsArray() @ArrayMinSize(1) @ArrayMaxSize(10) @IsString({ each: true }) documentIds!: string[]; }
-@ApiTags('ai-assistance') @ApiBearerAuth() @UseGuards(JwtAuthGuard) @Controller('ai')
-export class AiController { constructor(private prisma: PrismaService, private audit: AuditService) {}
- @Post('medical-history-summary') async summarize(@Req() req: any, @Body() dto: SummaryDto) { const docs = await this.prisma.medicalDocument.findMany({ where: { ownerId: req.user.id, id: { in: dto.documentIds } }, select: { id: true, title: true, type: true, documentDate: true, aiSummary: true, status: true } }); if (docs.length !== dto.documentIds.length) throw new BadRequestException('One or more documents do not exist or are not accessible'); await this.audit.record({ actorId: req.user.id, action: 'AI_SUMMARY_REQUESTED', resourceType: 'MedicalDocument', metadata: { documentCount: docs.length } });
- // Safe stub: replace with a provider adapter only after privacy, residency, CNDP and clinical safety reviews.
- return { status: 'provider_disabled', summary: null, sourceDocuments: docs.map(d => ({ id: d.id, title: d.title, type: d.type, documentDate: d.documentDate })), message: 'AI summarization is not configured. No clinical conclusion has been generated.', safety: { notMedicalAdvice: true, requiresClinicianReview: true, recommendationsEnabled: false } }; }
+import {
+  Body,
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+  BadRequestException,
+} from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { IsArray, IsString, ArrayMinSize, ArrayMaxSize } from "class-validator";
+import { PrismaService } from "../prisma/prisma.module";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { AuditService } from "../audit/audit.module";
+class SummaryDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  documentIds!: string[];
+}
+@ApiTags("ai-assistance")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller("ai")
+export class AiController {
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
+  @Post("medical-history-summary") async summarize(
+    @Req() req: any,
+    @Body() dto: SummaryDto,
+  ) {
+    const docs = await this.prisma.medicalDocument.findMany({
+      where: { ownerId: req.user.id, id: { in: dto.documentIds } },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        documentDate: true,
+        aiSummary: true,
+        status: true,
+      },
+    });
+    if (docs.length !== dto.documentIds.length)
+      throw new BadRequestException(
+        "One or more documents do not exist or are not accessible",
+      );
+    await this.audit.record({
+      actorId: req.user.id,
+      action: "AI_SUMMARY_REQUESTED",
+      resourceType: "MedicalDocument",
+      metadata: { documentCount: docs.length },
+    });
+    // Safe stub: replace with a provider adapter only after privacy, residency, CNDP and clinical safety reviews.
+    return {
+      status: "provider_disabled",
+      summary: null,
+      sourceDocuments: docs.map((d) => ({
+        id: d.id,
+        title: d.title,
+        type: d.type,
+        documentDate: d.documentDate,
+      })),
+      message:
+        "AI summarization is not configured. No clinical conclusion has been generated.",
+      safety: {
+        notMedicalAdvice: true,
+        requiresClinicianReview: true,
+        recommendationsEnabled: false,
+      },
+    };
+  }
 }
