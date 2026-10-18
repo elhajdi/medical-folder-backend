@@ -18,7 +18,7 @@ import {
   IsString,
   MaxLength,
 } from "class-validator";
-import { MedicationStatus } from "@prisma/client";
+import { MedicationStatus } from "../common/domain-enums";
 import { PrismaService } from "../prisma/prisma.module";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { AuditService } from "../audit/audit.module";

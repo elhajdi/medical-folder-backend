@@ -6,5 +6,6 @@ coverage/
 *.log
 .DS_Store
 .prisma
-prisma/sqlite/
+prisma/**/*.db
+prisma/**/*.db-journal
 .vscode/

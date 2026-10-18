@@ -5,6 +5,7 @@
   "description": "Backend-first prototype for a patient-controlled health record app",
   "scripts": {
     "start:dev": "nest start --watch",
+    "start:dev:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma && prisma db push --schema prisma/sqlite/schema.prisma && nest start --watch",
     "start": "node dist/main.js",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\"",
@@ -12,6 +13,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:generate:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma",
+    "prisma:push:sqlite": "prisma db push --schema prisma/sqlite/schema.prisma",
     "prisma:studio": "prisma studio",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

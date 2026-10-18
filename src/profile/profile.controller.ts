@@ -29,8 +29,13 @@ export class ProfileController {
   }
   @Put() async update(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const data = {
-      ...dto,
-      ...(dto.dateOfBirth ? { dateOfBirth: new Date(dto.dateOfBirth) } : {}),
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+      phone: dto.phone,
+      preferredLanguage: dto.preferredLanguage,
+      emergencyContactName: dto.emergencyContactName,
+      emergencyContactPhone: dto.emergencyContactPhone,
     };
     const result = await this.prisma.patientProfile.upsert({
       where: { userId: req.user.id },
