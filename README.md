@@ -9,6 +9,7 @@ A backend-first starter for a mobile app where patients manage their medical his
 - Account registration/login (bcrypt + JWT)
 - Patient profile (default timezone `Africa/Casablanca`)
 - Medical document metadata + local development upload/download and patient-owned document links
+- Review-only prescription extraction contract (OCR disabled by default)
 - Medication plan CRUD
 - AI summary endpoint contract that remains disabled by default
 - Audit-event service
@@ -69,6 +70,7 @@ Use only fake accounts and synthetic documents. Save the returned access token a
 - [ ] Enforce production-grade throttling, request limits, upload validation and file-content inspection.
 - [ ] Add robust audit coverage, immutable/append-only storage and alerting.
 - [ ] Add document-processing queue, OCR pipeline, idempotent medication reminder jobs and delivery tracking.
+- [ ] Approve the purpose, retention/deletion/export policy for persisted prescription candidates before real-data use; implement OCR only after privacy, security, residency and clinical review.
 - [ ] Add user data export/deletion, retention policy, backup encryption and restore drills.
 - [ ] Add automated unit/integration/e2e tests, tenant-isolation tests, dependency scanning and penetration testing.
 - [ ] Complete clinical review, incident response plan, privacy notices and consent flows.
@@ -93,3 +95,4 @@ See [`docs/solution-architecture-v1.1.md`](docs/solution-architecture-v1.1.md).
 - `src/cloud-storage/providers/google-drive.provider.ts` and
   `src/anonymization/anonymization-gateway.ts` are fail-closed placeholders, not production implementations.
 - Use synthetic data only until privacy/legal/security/clinical reviews and implementation tests are complete.
+- Current prototype exception: uploads remain on local development disk and patient-facing prescription candidates are persisted for at most 24 hours; OCR is explicitly disabled. Neither is production-ready.

@@ -13,3 +13,20 @@ Status: mandatory design constraint; enforcement must be implemented and tested.
 - Never include account/user IDs, source file IDs, raw text, exact dates, or a reverse mapping in that dataset.
 - Account deletion does not delete original files from Google Drive. Cloud deletion requires separate explicit confirmation.
 - Use synthetic data only until security, privacy, legal, and clinical reviews are complete.
+
+## Stage 1 patient-review candidate exception
+
+The Stage 1 prototype persists structured candidate fields only to support
+authenticated patient review. This is a narrowly scoped, not production-approved
+exception to the transient-intermediate rule:
+
+- OCR page text remains in process memory and is not persisted.
+- Candidate records are owner-scoped, never confirmed, and are purged from the
+  database after at most 24 hours (`EXTRACTION_RETENTION_HOURS`, capped at 24).
+- Expired candidates become unavailable and their status remains as a safe
+  `EXTRACTION_EXPIRED` error. Cleanup runs at startup, once per minute while
+  running, and before status/extraction reads.
+- If the service is offline at expiry, physical cleanup waits until startup or
+  the next request. This prototype does not provide a database-native TTL or
+  encrypted temporary store; real-data use remains blocked pending privacy,
+  security, retention, and operational sign-off.

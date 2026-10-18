@@ -54,62 +54,87 @@ enum AuditAction {
   MEDICATION_DELETED
   AI_SUMMARY_REQUESTED
   PROFILE_UPDATED
+  PRESCRIPTION_PROCESSING_STARTED
+  PRESCRIPTION_EXTRACTION_VIEWED
 }
 
 model User {
-  id           String            @id @default(cuid())
-  email        String            @unique
-  passwordHash String
-  role         UserRole          @default(PATIENT)
-  isActive     Boolean           @default(true)
-  emailVerifiedAt DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  profile      PatientProfile?
-  documents    MedicalDocument[]
-  medications  Medication[]
-  auditEvents  AuditEvent[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  passwordHash            String
+  role                    UserRole                 @default(PATIENT)
+  isActive                Boolean                  @default(true)
+  emailVerifiedAt         DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  profile                 PatientProfile?
+  documents               MedicalDocument[]
+  medications             Medication[]
+  auditEvents             AuditEvent[]
+  prescriptionExtractions PrescriptionExtraction[]
 }
 
 model PatientProfile {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique
-  firstName              String?
-  lastName               String?
-  dateOfBirth            DateTime?
-  phone                  String?
-  preferredLanguage      String   @default("fr")
-  timezone               String   @default("Africa/Casablanca")
-  emergencyContactName   String?
-  emergencyContactPhone  String?
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  firstName             String?
+  lastName              String?
+  dateOfBirth           DateTime?
+  phone                 String?
+  preferredLanguage     String    @default("fr")
+  timezone              String    @default("Africa/Casablanca")
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model MedicalDocument {
-  id               String         @id @default(cuid())
-  ownerId          String
-  type             DocumentType
-  title            String
-  description      String?
-  documentDate     DateTime?
-  originalFilename String
-  mimeType         String
-  sizeBytes        Int
-  storageKey       String         @unique
-  sha256           String
-  status           DocumentStatus @default(UPLOADED)
-  extractedText    String?
-  aiSummary        String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  owner            User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  linksFrom        DocumentLink[] @relation("FromDocument")
-  linksTo          DocumentLink[] @relation("ToDocument")
+  id                     String                  @id @default(cuid())
+  ownerId                String
+  type                   DocumentType
+  title                  String
+  description            String?
+  documentDate           DateTime?
+  originalFilename       String
+  mimeType               String
+  sizeBytes              Int
+  storageKey             String                  @unique
+  sha256                 String
+  status                 DocumentStatus          @default(UPLOADED)
+  extractedText          String?
+  aiSummary              String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  owner                  User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  linksFrom              DocumentLink[]          @relation("FromDocument")
+  linksTo                DocumentLink[]          @relation("ToDocument")
+  prescriptionExtraction PrescriptionExtraction?
 
   @@index([ownerId, documentDate])
   @@index([ownerId, type])
+  @@index([ownerId, type, sha256])
+}
+
+model PrescriptionExtraction {
+  id              String          @id @default(cuid())
+  documentId      String          @unique
+  ownerId         String
+  status          String          @default("queued")
+  candidate       Json?
+  provider        String
+  providerVersion String?
+  errorCategory   String?
+  createdAt       DateTime        @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  expiresAt       DateTime?
+  updatedAt       DateTime        @updatedAt
+  document        MedicalDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, status])
 }
 
 model DocumentLink {
@@ -128,21 +153,21 @@ model DocumentLink {
 }
 
 model Medication {
-  id                    String            @id @default(cuid())
-  ownerId               String
-  name                  String
-  dosage                String
-  instructions          String?
-  startDate             DateTime
-  endDate               DateTime?
-  status                MedicationStatus  @default(ACTIVE)
-  prescribingClinician  String?
-  sourceDocumentId      String?
-  confirmedByPatientAt  DateTime?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  owner                 User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  reminders             MedicationReminder[]
+  id                   String               @id @default(cuid())
+  ownerId              String
+  name                 String
+  dosage               String
+  instructions         String?
+  startDate            DateTime
+  endDate              DateTime?
+  status               MedicationStatus     @default(ACTIVE)
+  prescribingClinician String?
+  sourceDocumentId     String?
+  confirmedByPatientAt DateTime?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  owner                User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  reminders            MedicationReminder[]
 
   @@index([ownerId, status])
 }
