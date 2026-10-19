@@ -29,6 +29,10 @@
       "value": ""
     },
     {
+      "key": "prescriptionId",
+      "value": ""
+    },
+    {
       "key": "secondDocumentId",
       "value": ""
     },
@@ -241,6 +245,86 @@
             },
             "url": "{{baseUrl}}/api/v1/documents/upload",
             "description": "Select a synthetic PDF, JPEG, or PNG file in Postman. Do not upload real medical documents."
+          }
+        },
+        {
+          "name": "Upload synthetic prescription for review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.id) {",
+                  "    pm.collectionVariables.set('prescriptionId', body.id);",
+                  "    pm.collectionVariables.set('documentId', body.id);",
+                  "  }",
+                  "  if (body.processing) pm.test('Processing response is review-only', () => pm.expect(body.processing.status).to.be.oneOf(['needs_review', 'failed', 'processing', 'queued']));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "type",
+                  "value": "PRESCRIPTION",
+                  "type": "text"
+                },
+                {
+                  "key": "title",
+                  "value": "Synthetic prescription for review",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Synthetic test fixture only; not a patient document.",
+                  "type": "text"
+                },
+                {
+                  "key": "documentDate",
+                  "value": "2026-01-15",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/documents/upload",
+            "description": "Select a synthetic PDF, JPEG, or PNG only. This stores the returned prescription ID for the status, retry, and extraction requests. With OCR_PROVIDER=disabled, processing safely reports OCR_UNAVAILABLE. Never upload a real prescription."
+          }
+        },
+        {
+          "name": "Get prescription processing status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/documents/{{prescriptionId}}/processing-status",
+            "description": "Returns safe status/provider/timestamp/error metadata for your own prescription. Candidate data is not returned here."
+          }
+        },
+        {
+          "name": "Retry prescription processing",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/documents/{{prescriptionId}}/process",
+            "description": "Retries processing for your own prescription. OCR remains disabled unless an approved provider is configured; this never confirms instructions or creates medication plans or reminders."
+          }
+        },
+        {
+          "name": "Get prescription extraction candidates",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/extraction",
+            "description": "Returns only your unconfirmed review candidates, with unknown/ambiguous fields preserved as null. Candidates expire according to the configured retention window."
           }
         },
         {
