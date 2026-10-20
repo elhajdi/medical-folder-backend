@@ -56,6 +56,9 @@ enum AuditAction {
   PROFILE_UPDATED
   PRESCRIPTION_PROCESSING_STARTED
   PRESCRIPTION_EXTRACTION_VIEWED
+  PRESCRIPTION_EXTRACTION_REVIEWED
+  PRESCRIPTION_CONFIRMED
+  PRESCRIPTION_REJECTED
 }
 
 model User {
@@ -126,6 +129,11 @@ model PrescriptionExtraction {
   provider        String
   providerVersion String?
   errorCategory   String?
+  confirmation    Json?
+  confirmedAt     DateTime?
+  rejectedAt      DateTime?
+  rejectedReason  String?
+  version         Int             @default(1)
   createdAt       DateTime        @default(now())
   startedAt       DateTime?
   completedAt     DateTime?
@@ -135,6 +143,7 @@ model PrescriptionExtraction {
   owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, status])
+  @@index([ownerId, documentId])
 }
 
 model DocumentLink {

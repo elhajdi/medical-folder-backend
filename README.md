@@ -53,6 +53,40 @@ Use only fake accounts and synthetic documents. Save the returned access token a
 - Document upload accepts PDF, JPEG and PNG, with a configurable size cap.
 - `DocumentType`: `PRESCRIPTION`, `LAB_RESULT`, `MEDICAL_REPORT`, `RADIOLOGY`, `DISCHARGE_SUMMARY`, `VACCINATION`, `OTHER`.
 
+### Prescription extraction review
+
+The authenticated prescription routes use the prescription document ID as
+`:prescriptionId`. The candidate is provisional OCR data and is not medication
+advice. Patient confirmation is not clinician verification.
+
+- `GET /api/v1/prescriptions/:prescriptionId/extraction` reads the patient-owned
+  candidate and its review state.
+- `PATCH /api/v1/prescriptions/:prescriptionId/extraction` accepts candidate
+  corrections, for example:
+
+  ```json
+  {
+    "prescriptionDate": { "value": "2026-01-01" },
+    "medications": [
+      {
+        "name": { "value": "Synthetic medicine" },
+        "dose": { "value": "1 tablet" },
+        "frequency": { "value": "once daily" }
+      }
+    ]
+  }
+  ```
+
+- `POST /api/v1/prescriptions/:prescriptionId/confirm` accepts the same optional
+  candidate fields, validates required date and medication details, then
+  confirms the patient-reviewed data.
+- `POST /api/v1/prescriptions/:prescriptionId/reject` accepts an optional
+  `{"reason":"..."}` body and rejects the unconfirmed candidate.
+
+All routes require a bearer token and only operate on the authenticated
+patient's prescription. Interactive request schemas are available in Swagger at
+`/api/docs`.
+
 ## Developer agents
 
 1. Read `AGENTS.md` and `docs/architecture.md` before coding.

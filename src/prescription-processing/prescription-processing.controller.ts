@@ -1,7 +1,164 @@
-import { Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiPropertyOptional,
+  ApiTags,
+} from "@nestjs/swagger";
+import { Type } from "class-transformer";
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from "class-validator";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { PrescriptionProcessingService } from "./prescription-processing.service";
+
+class CandidateSourceDto {
+  @ApiPropertyOptional({ type: Number, minimum: 1, nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number | null;
+}
+
+class CandidateFieldDto {
+  @ApiPropertyOptional({ type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  value?: string | null;
+
+  @ApiPropertyOptional({ type: Number, minimum: 0, maximum: 1, nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  confidence?: number | null;
+
+  @ApiPropertyOptional({ type: CandidateSourceDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateSourceDto)
+  source?: CandidateSourceDto | null;
+}
+
+class MedicationCandidateDto {
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  name?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  strength?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  form?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  dose?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  route?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  frequency?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  duration?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  quantity?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  instructions?: CandidateFieldDto | null;
+}
+
+class PrescriptionCandidateReviewDto {
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  prescriptionDate?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  clinician?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: CandidateFieldDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateFieldDto)
+  facility?: CandidateFieldDto | null;
+
+  @ApiPropertyOptional({ type: MedicationCandidateDto, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MedicationCandidateDto)
+  medications?: MedicationCandidateDto[] | null;
+
+  @ApiPropertyOptional({ type: String, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  warnings?: string[] | null;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  reviewRequired?: boolean;
+}
+
+class RejectPrescriptionDto {
+  @ApiPropertyOptional({ type: String, maxLength: 200 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reason?: string;
+}
 
 @ApiTags("prescription-processing")
 @ApiBearerAuth()
@@ -34,5 +191,59 @@ export class PrescriptionExtractionController {
     @Param("prescriptionId") prescriptionId: string,
   ) {
     return this.processing.getExtraction(req.user.id, prescriptionId);
+  }
+
+  @Patch(":prescriptionId/extraction")
+  @ApiOperation({
+    summary: "Save patient corrections to a prescription candidate",
+    description:
+      "Updates an unconfirmed candidate owned by the authenticated patient. This does not create or update confirmed medication records.",
+  })
+  reviewExtraction(
+    @Req() req: any,
+    @Param("prescriptionId") prescriptionId: string,
+    @Body() patch: PrescriptionCandidateReviewDto,
+  ) {
+    return this.processing.reviewExtraction(
+      req.user.id,
+      prescriptionId,
+      patch,
+    );
+  }
+
+  @Post(":prescriptionId/confirm")
+  @ApiOperation({
+    summary: "Confirm a reviewed prescription candidate",
+    description:
+      "Patient confirmation may create medication records after required candidate fields have been validated. Confirmation is not clinician verification or medical advice.",
+  })
+  confirmExtraction(
+    @Req() req: any,
+    @Param("prescriptionId") prescriptionId: string,
+    @Body() payload: PrescriptionCandidateReviewDto,
+  ) {
+    return this.processing.confirmExtraction(
+      req.user.id,
+      prescriptionId,
+      payload as Record<string, unknown>,
+    );
+  }
+
+  @Post(":prescriptionId/reject")
+  @ApiOperation({
+    summary: "Reject a prescription candidate",
+    description:
+      "Marks an unconfirmed prescription candidate as rejected for the authenticated patient.",
+  })
+  rejectExtraction(
+    @Req() req: any,
+    @Param("prescriptionId") prescriptionId: string,
+    @Body() payload: RejectPrescriptionDto,
+  ) {
+    return this.processing.rejectExtraction(
+      req.user.id,
+      prescriptionId,
+      payload?.reason,
+    );
   }
 }

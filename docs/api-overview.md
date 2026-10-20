@@ -15,6 +15,9 @@ Base path: `/api/v1`; interactive OpenAPI: `/api/docs`.
 | GET          | `/documents/:id/processing-status`          | Yes  | Get the authenticated owner's safe prescription processing status                    |
 | POST         | `/documents/:id/process`                    | Yes  | Retry processing for the authenticated owner's prescription document                 |
 | GET          | `/prescriptions/:prescriptionId/extraction` | Yes  | Read the owner's unconfirmed prescription candidates                                 |
+| PATCH        | `/prescriptions/:prescriptionId/extraction` | Yes  | Correct the owner's unconfirmed candidate; does not create medication records        |
+| POST         | `/prescriptions/:prescriptionId/confirm`    | Yes  | Confirm a complete patient-reviewed candidate and create medication records          |
+| POST         | `/prescriptions/:prescriptionId/reject`     | Yes  | Reject the owner's unconfirmed prescription candidate                               |
 | GET          | `/documents/:id/download`                   | Yes  | Download own document                                                                |
 | DELETE       | `/documents/:id`                            | Yes  | Delete own document metadata/file (physical-file cleanup needs production hardening) |
 | GET/POST     | `/medications`                              | Yes  | List/create own medication plans                                                     |
@@ -41,3 +44,9 @@ the only supported configuration. Processing then ends with `failed` and
 not an OCR mock. A deterministic fake provider exists only in automated tests.
 Set `EXTRACTION_RETENTION_HOURS` to a positive value no greater than 24; the
 prototype defaults it to 24 hours.
+
+The Postman collection includes synthetic examples for candidate correction,
+confirmation validation, explicit confirmation, rejection, and cross-owner read
+denial. Review, confirmation, and rejection scenarios require a separate
+unconfirmed candidate produced by an approved OCR provider; do not use real
+medical documents to exercise them.

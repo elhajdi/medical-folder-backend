@@ -46,7 +46,7 @@ describe("PrescriptionProcessingService", () => {
         update: jest.fn().mockImplementation(({ data, where }) =>
           Promise.resolve({
             id: "extraction-1",
-            documentId: where.documentId,
+            documentId: where.documentId ?? ownedDocument.id,
             status: data.status,
             candidate: data.candidate,
             provider: "test-fake",

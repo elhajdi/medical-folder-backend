@@ -33,6 +33,14 @@
       "value": ""
     },
     {
+      "key": "rejectionPrescriptionId",
+      "value": ""
+    },
+    {
+      "key": "otherAccessToken",
+      "value": ""
+    },
+    {
       "key": "secondDocumentId",
       "value": ""
     },
@@ -325,6 +333,158 @@
             "method": "GET",
             "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/extraction",
             "description": "Returns only your unconfirmed review candidates, with unknown/ambiguous fields preserved as null. Candidates expire according to the configured retention window."
+          }
+        },
+        {
+          "name": "Review prescription candidate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescriptionDate\": { \"value\": \"2026-01-15\", \"confidence\": null, \"source\": null },\n  \"clinician\": { \"value\": \"Synthetic Clinician\", \"confidence\": null, \"source\": null },\n  \"facility\": { \"value\": \"Synthetic Clinic\", \"confidence\": null, \"source\": null },\n  \"medications\": [\n    {\n      \"name\": { \"value\": \"Synthetic medicine\", \"confidence\": null, \"source\": null },\n      \"strength\": { \"value\": \"10 mg\", \"confidence\": null, \"source\": null },\n      \"form\": { \"value\": \"tablet\", \"confidence\": null, \"source\": null },\n      \"dose\": { \"value\": \"1 tablet\", \"confidence\": null, \"source\": null },\n      \"route\": { \"value\": \"oral\", \"confidence\": null, \"source\": null },\n      \"frequency\": { \"value\": \"once daily\", \"confidence\": null, \"source\": null },\n      \"duration\": { \"value\": \"5 days\", \"confidence\": null, \"source\": null },\n      \"quantity\": { \"value\": \"5\", \"confidence\": null, \"source\": null },\n      \"instructions\": { \"value\": null, \"confidence\": null, \"source\": null }\n    }\n  ],\n  \"warnings\": [],\n  \"reviewRequired\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/extraction",
+            "description": "Scenario: patient corrects a needs_review candidate. Requires OCR/provider processing to have produced a candidate for this synthetic prescription. Edits remain provisional and do not create medication records."
+          }
+        },
+        {
+          "name": "Confirm incomplete candidate (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Incomplete candidate cannot be confirmed', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/confirm",
+            "description": "Negative validation scenario: a needs_review candidate missing its required prescription date and medication details must be rejected. Requires an existing unconfirmed candidate."
+          }
+        },
+        {
+          "name": "Confirm reviewed prescription candidate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Confirmation is successful', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql('confirmed');",
+                  "  pm.expect(body.confirmedAt).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prescriptionDate\": { \"value\": \"2026-01-15\", \"confidence\": null, \"source\": null },\n  \"medications\": [\n    {\n      \"name\": { \"value\": \"Synthetic medicine\", \"confidence\": null, \"source\": null },\n      \"dose\": { \"value\": \"1 tablet\", \"confidence\": null, \"source\": null },\n      \"frequency\": { \"value\": \"once daily\", \"confidence\": null, \"source\": null },\n      \"instructions\": { \"value\": \"once daily\", \"confidence\": null, \"source\": null }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/confirm",
+            "description": "Scenario: explicitly confirm a reviewed candidate with required synthetic date, medication name, dose, and frequency. Only patient confirmation is recorded; it is not clinician verification or medical advice. Do not run after rejecting this same candidate."
+          }
+        },
+        {
+          "name": "Reject prescription candidate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Synthetic test rejection\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{rejectionPrescriptionId}}/reject",
+            "description": "Alternative lifecycle scenario: reject a separate unconfirmed candidate. Set rejectionPrescriptionId to a different synthetic prescription with status needs_review; a rejected candidate cannot later be confirmed."
+          }
+        },
+        {
+          "name": "Read extraction as another patient (expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Another patient cannot read this extraction', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{otherAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/prescriptions/{{prescriptionId}}/extraction",
+            "description": "Negative authorization scenario: set otherAccessToken to a separately registered synthetic user's token. The owner-scoped endpoint must return 404 for another patient's prescription."
           }
         },
         {
