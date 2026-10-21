@@ -8,6 +8,7 @@ import { DocumentsModule } from "./documents/documents.module";
 import { MedicationsModule } from "./medications/medications.module";
 import { AiModule } from "./ai/ai.module";
 import { AuditModule } from "./audit/audit.module";
+import { CloudStorageModule } from "./cloud-storage/cloud-storage.module";
 import { HealthController } from "./health.controller";
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { HealthController } from "./health.controller";
     MedicationsModule,
     AiModule,
     AuditModule,
+    CloudStorageModule,
   ],
   controllers: [HealthController],
 })

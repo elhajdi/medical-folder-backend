@@ -2,6 +2,7 @@ import {
   AuthorizedCloudFile,
   CloudStorageProvider,
   DownloadedCloudFile,
+  UserSelectedUpload,
 } from "../cloud-storage-provider.interface";
 
 /**
@@ -13,6 +14,15 @@ import {
  */
 export class GoogleDriveProvider implements CloudStorageProvider {
   readonly providerName = "google-drive" as const;
+
+  async uploadUserSelectedFile(
+    _connectionRef: string,
+    _file: UserSelectedUpload,
+  ): Promise<AuthorizedCloudFile> {
+    throw new Error(
+      "Google Drive integration is not implemented. Fail closed.",
+    );
+  }
 
   async listAuthorizedFiles(
     _connectionRef: string,

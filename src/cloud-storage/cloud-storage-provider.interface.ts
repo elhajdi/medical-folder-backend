@@ -17,8 +17,21 @@ export interface DownloadedCloudFile {
   sizeBytes?: number;
 }
 
+export interface UserSelectedUpload {
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  content: AsyncIterable<Uint8Array>;
+  folderRef?: string;
+}
+
 export interface CloudStorageProvider {
   readonly providerName: "google-drive" | "microsoft-onedrive";
+
+  uploadUserSelectedFile(
+    connectionRef: string,
+    file: UserSelectedUpload,
+  ): Promise<AuthorizedCloudFile>;
 
   listAuthorizedFiles(
     connectionRef: string,

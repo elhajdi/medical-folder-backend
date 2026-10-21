@@ -8,11 +8,12 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
-import { AuditAction, DocumentType, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { readFile } from "fs/promises";
 import { resolve, sep } from "path";
 import { AuditService } from "../audit/audit.module";
+import { AuditAction, DocumentType } from "../common/domain-enums";
 import { PrismaService } from "../prisma/prisma.module";
 import {
   CandidateField,

@@ -3,10 +3,10 @@ jest.mock("fs/promises", () => ({
   readFile: jest.fn().mockResolvedValue(Buffer.from("%PDF-1.7 synthetic")),
 }));
 
-import { AuditAction, DocumentType } from "@prisma/client";
 import { describe, expect, it } from "@jest/globals";
 import { readFile } from "fs/promises";
 import { AuditService } from "../audit/audit.module";
+import { AuditAction, DocumentType } from "../common/domain-enums";
 import { PrismaService } from "../prisma/prisma.module";
 import { OcrProvider, OcrUnavailableError } from "./ocr-provider";
 import { PrescriptionProcessingService } from "./prescription-processing.service";
