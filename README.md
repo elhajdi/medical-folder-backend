@@ -58,6 +58,9 @@ Run the HTTP-level E2E suite with:
 npm run test:e2e -- --runInBand
 ```
 
+The E2E script generates the Prisma client before starting Jest. If you invoke
+Jest directly, first run `npm run prisma:generate`.
+
 The suite uses synthetic data, an in-memory Prisma test double, and mocked
 prescription processing. It does not test SQL migrations, real storage, or OCR.
 See the [E2E test plan](docs/e2e-test-plan.md) for scenario coverage and
