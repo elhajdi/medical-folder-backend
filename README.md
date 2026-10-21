@@ -50,6 +50,19 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 
 Use only fake accounts and synthetic documents. Save the returned access token as `TOKEN` and pass `Authorization: Bearer $TOKEN` to protected endpoints.
 
+## End-to-end tests
+
+Run the HTTP-level E2E suite with:
+
+```bash
+npm run test:e2e -- --runInBand
+```
+
+The suite uses synthetic data, an in-memory Prisma test double, and mocked
+prescription processing. It does not test SQL migrations, real storage, or OCR.
+See the [E2E test plan](docs/e2e-test-plan.md) for scenario coverage and
+remaining integration-test work. Never use real patient data in tests.
+
 ## API conventions
 
 - JSON request/response unless multipart upload.
