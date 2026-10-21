@@ -16,6 +16,8 @@ A backend-first starter for a mobile app where patients manage their medical his
 - PostgreSQL + Prisma schema
 - Swagger/OpenAPI at `/api/docs`
 - `AGENTS.md`, Copilot instructions and specialist agent prompts
+- Authenticated integration capability status; Google Drive and anonymous-data
+  processing remain disabled and fail closed
 
 ## Run locally
 
@@ -86,6 +88,21 @@ advice. Patient confirmation is not clinician verification.
 All routes require a bearer token and only operate on the authenticated
 patient's prescription. Interactive request schemas are available in Swagger at
 `/api/docs`.
+
+### Stage 3 cloud storage and privacy status
+
+- `GET /api/v1/cloud-connections/status` requires authentication and reports
+  global capability state only; it does not indicate that an individual user is
+  connected.
+- Google Drive OAuth, account connections, uploads, and token revocation are not
+  implemented. The current local document upload remains development-only.
+- Anonymous-data submission is disabled. The privacy gate is a stub, and no
+  anonymous store is configured.
+- See [the Stage 3 runbook](docs/stage3-google-drive-privacy-runbook.md) for
+  migration, retention, deployment, and Morocco governance prerequisites.
+- Keep synthetic data only. Do not enable cloud integrations by setting
+  environment variables; implementation and independent review are still
+  required.
 
 ## Developer agents
 

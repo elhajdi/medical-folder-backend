@@ -298,7 +298,25 @@ Do not release with real health data until all are true:
 
 ## 15. Current implementation status
 
-The accompanying backend archive updates documentation and adds a provider abstraction plus fail-closed scaffolding. The Google Drive provider and anonymization gateway are intentionally placeholders; they do not perform a real OAuth flow, download a file, OCR a document, or anonymize health data. Route names and data models in this document are proposals unless confirmed in the source code.
+The backend now has a provider-neutral cloud-storage interface with an explicit
+user-selected upload operation, an authenticated global integration-capability
+status endpoint, and a confirmed-observation pipeline boundary. The Google
+Drive provider still fails closed: it does not perform OAuth, upload, download,
+token storage, token revocation, or per-user connection tracking. The status
+endpoint reports global capability only and is not a user's connection or
+upload status.
+
+The confirmed-observation pipeline is disabled by default and is not wired to
+prescription confirmation or a persistent destination. The anonymization
+gateway still returns `null`; there is no approved field allowlist or
+re-identification review. No anonymous data is written. The existing document
+upload continues to persist local backend files for development and is not a
+Drive-first implementation.
+
+See [`docs/stage3-google-drive-privacy-runbook.md`](stage3-google-drive-privacy-runbook.md)
+and [`docs/decisions/0002-stage3-safe-integration-boundaries.md`](decisions/0002-stage3-safe-integration-boundaries.md)
+for current boundaries, local-file migration guidance, and external setup and
+governance prerequisites. These are not production or compliance approvals.
 
 **Until production controls are implemented and independently reviewed, use synthetic data only.**
 

@@ -610,6 +610,19 @@
       ]
     },
     {
+      "name": "Cloud storage and privacy",
+      "item": [
+        {
+          "name": "Get integration capability status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/cloud-connections/status",
+            "description": "Authenticated global capability status only; this does not report a user's connection. Google Drive OAuth and anonymous-data writes are disabled. Synthetic data only."
+          }
+        }
+      ]
+    },
+    {
       "name": "AI assistance",
       "item": [
         {

@@ -6,6 +6,7 @@
   "scripts": {
     "start:dev": "nest start --watch",
     "start:dev:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma && prisma db push --schema prisma/sqlite/schema.prisma && nest start --watch",
+    "sds": "npm run start:dev:sqlite",
     "start": "node dist/main.js",
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\"",

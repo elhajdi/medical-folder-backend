@@ -12,6 +12,9 @@ Flutter client (future) → NestJS REST API (`/api/v1`) → PostgreSQL via Prism
 - Medications: patient-entered medication plan CRUD. Does not infer dosage or create clinical advice.
 - AI: source-document selection and disabled response contract; no external provider call.
 - Audit: event recording service.
+- Cloud storage: authenticated capability status only. The provider contract is
+  provider-neutral, but Google Drive OAuth and all provider operations remain
+  disabled and fail closed. Anonymous-data submission is also disabled.
 
 ## Production target before launch
 
