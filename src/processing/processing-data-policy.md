@@ -21,6 +21,12 @@ authenticated patient review. This is a narrowly scoped, not production-approved
 exception to the transient-intermediate rule:
 
 - OCR page text remains in process memory and is not persisted.
+- The optional local PaddleOCR adapter sends document bytes to a same-host
+  Python worker over a private process pipe; page images and OCR text are
+  processed in memory and are not written by the worker to temporary files.
+- PaddleOCR model files are cached separately from document data. Treat that
+  cache as deployment software, pin/review it, and do not place document data
+  in the model cache.
 - Candidate records are owner-scoped, never confirmed, and are purged from the
   database after at most 24 hours (`EXTRACTION_RETENTION_HOURS`, capped at 24).
 - Expired candidates become unavailable and their status remains as a safe

@@ -40,12 +40,16 @@ function getExplicitValue(
   page: OcrPage,
   fieldName: string,
   warnings: Set<string>,
+  textOffset = 0,
 ): CandidateField {
-  const values: string[] = [];
-  const matcher = new RegExp(`^\\s*(?:${labels})\\s*:\\s*(.+?)\\s*$`, "gim");
+  const values: { value: string; index: number }[] = [];
+  const matcher = new RegExp(
+    `^[ \\t]*(?:${labels})[ \\t]*:[ \\t]*(.+?)[ \\t]*$`,
+    "gim",
+  );
   for (const match of text.matchAll(matcher)) {
     const value = match[1].replace(/\s+/g, " ").trim();
-    if (value) values.push(value);
+    if (value) values.push({ value, index: match.index ?? 0 });
   }
 
   if (values.length > 1) {
@@ -58,16 +62,17 @@ function getExplicitValue(
   }
   if (values.length === 0) return emptyField();
 
+  const location = sourceAtPosition(page, textOffset + values[0].index);
   const confidence =
-    page.confidence !== null &&
-    Number.isFinite(page.confidence) &&
-    page.confidence >= 0 &&
-    page.confidence <= 1
-      ? page.confidence
+    location.confidence !== null &&
+    Number.isFinite(location.confidence) &&
+    location.confidence >= 0 &&
+    location.confidence <= 1
+      ? location.confidence
       : null;
   if (confidence === null) warnings.add("confidence_unavailable");
   else if (confidence < MIN_REVIEW_CONFIDENCE) warnings.add("low_confidence");
-  return { value: values[0], confidence, source: { page: page.page } };
+  return { value: values[0].value, confidence, source: location.source };
 }
 
 function normalizeDate(
@@ -102,6 +107,28 @@ function emptyMedication(): MedicationCandidate {
     duration: emptyField(),
     quantity: emptyField(),
     instructions: emptyField(),
+  };
+}
+
+function sourceAtPosition(page: OcrPage, position: number) {
+  let offset = 0;
+  for (const [regionIndex, region] of (page.regions ?? []).entries()) {
+    const end = offset + region.text.length;
+    if (position >= offset && position <= end) {
+      return {
+        source: {
+          page: page.page,
+          regionIndex,
+          boundingBox: { points: region.boundingBox },
+        },
+        confidence: region.confidence,
+      };
+    }
+    offset = end + 1;
+  }
+  return {
+    source: { page: page.page },
+    confidence: page.confidence,
   };
 }
 
@@ -160,6 +187,7 @@ export class PrescriptionParser {
             page,
             field,
             warnings,
+            start,
           );
         }
         if (medication.name.value !== null) medications.push(medication);

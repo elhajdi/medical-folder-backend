@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Backend-first prototype for a patient-controlled health record app",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "start:dev": "nest start --watch",
     "start:dev:sqlite": "prisma generate --schema prisma/sqlite/schema.prisma && prisma db push --schema prisma/sqlite/schema.prisma && nest start --watch",

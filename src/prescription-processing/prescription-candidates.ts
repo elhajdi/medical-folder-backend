@@ -1,5 +1,20 @@
+export interface OcrPoint {
+  x: number;
+  y: number;
+}
+
+export type OcrBoundingBox = [OcrPoint, OcrPoint, OcrPoint, OcrPoint];
+
+export interface OcrTextRegion {
+  text: string;
+  confidence: number | null;
+  boundingBox: OcrBoundingBox;
+}
+
 export interface CandidateSource {
   page: number | null;
+  regionIndex?: number | null;
+  boundingBox?: { points: OcrBoundingBox } | null;
 }
 
 export interface CandidateField<T = string> {
@@ -33,8 +48,12 @@ export interface OcrPage {
   page: number;
   text: string;
   confidence: number | null;
+  regions?: OcrTextRegion[];
 }
 
 export interface OcrResult {
   pages: OcrPage[];
+  status?: "completed" | "empty";
+  languages?: string[];
+  modelVersion?: string;
 }

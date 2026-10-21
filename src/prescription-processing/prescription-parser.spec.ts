@@ -96,6 +96,45 @@ describe("PrescriptionParser", () => {
     });
   });
 
+  it("retains OCR region provenance and region-level OCR scores", () => {
+    const candidate = parser.parse([
+      {
+        page: 1,
+        text: "Medication: Synthetic medicine",
+        confidence: 0.8,
+        regions: [
+          {
+            text: "Medication: Synthetic medicine",
+            confidence: 0.93,
+            boundingBox: [
+              { x: 10, y: 20 },
+              { x: 200, y: 20 },
+              { x: 200, y: 50 },
+              { x: 10, y: 50 },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(candidate.medications[0].name).toEqual({
+      value: "Synthetic medicine",
+      confidence: 0.93,
+      source: {
+        page: 1,
+        regionIndex: 0,
+        boundingBox: {
+          points: [
+            { x: 10, y: 20 },
+            { x: 200, y: 20 },
+            { x: 200, y: 50 },
+            { x: 10, y: 50 },
+          ],
+        },
+      },
+    });
+  });
+
   it("keeps missing fields unknown and ambiguous values null", () => {
     const candidate = parser.parse([
       {

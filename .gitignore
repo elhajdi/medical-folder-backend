@@ -4,6 +4,7 @@ dist/
 var/
 coverage/
 *.log
+__pycache__/
 .DS_Store
 .prisma
 prisma/**/*.db

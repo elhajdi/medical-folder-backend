@@ -2,13 +2,14 @@
 
 ## Shape
 
-Flutter client (future) → NestJS REST API (`/api/v1`) → PostgreSQL via Prisma. Uploaded documents are stored in a local private folder for development only. Async document scanning/OCR, object storage, queue workers and notification delivery are intentionally not implemented yet. The AI endpoint is a safe disabled adapter stub.
+Flutter client (future) → NestJS REST API (`/api/v1`) → PostgreSQL via Prisma. Uploaded documents are stored in a local private folder for development only. Prescription OCR can be explicitly enabled through the local PaddleOCR provider and Python worker; OCR remains disabled by default and processing is still inline rather than queued. Document scanning, object storage, background workers and notification delivery are not implemented. The AI endpoint is a safe disabled adapter stub.
 
 ## Modules
 
 - Auth: email/password registration, bcrypt hash, short-lived JWT.
 - Profile: patient profile and Morocco/Casablanca timezone defaults.
 - Documents: upload/list/download/delete with owner scoping and audit events.
+- Prescription processing: owner-scoped, review-only candidate lifecycle; optional local PaddleOCR 2.10.0 worker for French and Arabic, with bounded in-memory image/PDF processing.
 - Medications: patient-entered medication plan CRUD. Does not infer dosage or create clinical advice.
 - AI: source-document selection and disabled response contract; no external provider call.
 - Audit: event recording service.

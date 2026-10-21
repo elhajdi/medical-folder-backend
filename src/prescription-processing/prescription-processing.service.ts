@@ -20,7 +20,12 @@ import {
   PrescriptionCandidate,
 } from "./prescription-candidates";
 import { PrescriptionParser } from "./prescription-parser";
-import { OCR_PROVIDER, OcrProvider, OcrUnavailableError } from "./ocr-provider";
+import {
+  OCR_PROVIDER,
+  OcrProvider,
+  OcrProviderError,
+  OcrUnavailableError,
+} from "./ocr-provider";
 
 const uploadDirectory = resolve(process.env.UPLOAD_DIR || "./var/uploads");
 
@@ -30,7 +35,25 @@ function candidateToJson(
   const field = (value: CandidateField): Prisma.InputJsonObject => ({
     value: value.value,
     confidence: value.confidence,
-    source: value.source ? { page: value.source.page } : null,
+    source: value.source
+      ? {
+          page: value.source.page,
+          ...(value.source.regionIndex === undefined
+            ? {}
+            : { regionIndex: value.source.regionIndex }),
+          ...(value.source.boundingBox === undefined
+            ? {}
+            : {
+              boundingBox: value.source.boundingBox
+                ? {
+                    points: value.source.boundingBox.points.map(
+                      ({ x, y }) => ({ x, y }),
+                    ),
+                  }
+                : null,
+            }),
+        }
+      : null,
   });
   return {
     prescriptionDate: field(candidate.prescriptionDate),
@@ -221,7 +244,22 @@ export class PrescriptionProcessingService
         documentId,
         error instanceof OcrUnavailableError
           ? "OCR_UNAVAILABLE"
-          : "OCR_PROVIDER_ERROR",
+          : error instanceof OcrProviderError
+            ? error.code
+            : "OCR_PROVIDER_ERROR",
+        correlationId,
+        startedAt,
+      );
+    }
+
+    if (
+      ocrResult.status === "empty" ||
+      ocrResult.pages.every((page) => !page.text.trim())
+    ) {
+      return this.fail(
+        ownerId,
+        documentId,
+        "EMPTY_OCR_RESULT",
         correlationId,
         startedAt,
       );
@@ -241,13 +279,13 @@ export class PrescriptionProcessingService
     }
 
     const extraction = await this.prisma.prescriptionExtraction.findFirst({
-      where: { documentId },
+      where: { documentId, ownerId },
       select: { id: true },
     });
     if (!extraction) throw new NotFoundException("Prescription extraction not found");
 
     const result = await this.prisma.prescriptionExtraction.update({
-      where: { id: extraction.id },
+      where: { id: extraction.id, documentId, ownerId },
       data: {
         status: "needs_review",
         candidate: candidateToJson(candidate) as Prisma.InputJsonValue,
@@ -382,7 +420,7 @@ export class PrescriptionProcessingService
     }
     const candidate = this.sanitizeCandidate(extraction.candidate as Record<string, unknown> | null, patch);
     const result = await this.prisma.prescriptionExtraction.update({
-      where: { id: extraction.id },
+      where: { id: extraction.id, documentId, ownerId },
       data: {
         status: "needs_review",
         candidate: candidate as Prisma.InputJsonValue,
@@ -424,12 +462,17 @@ export class PrescriptionProcessingService
     }
     if (extraction.status === "rejected") {
       return this.prisma.prescriptionExtraction.findFirst({
-        where: { id: extraction.id },
+        where: {
+          id: extraction.id,
+          documentId,
+          ownerId,
+          document: { ownerId, type: DocumentType.PRESCRIPTION },
+        },
         select: { documentId: true, status: true, candidate: true, rejectedAt: true, rejectedReason: true },
       });
     }
     const result = await this.prisma.prescriptionExtraction.update({
-      where: { id: extraction.id },
+      where: { id: extraction.id, documentId, ownerId },
       data: {
         status: "rejected",
         rejectedAt: new Date(),
@@ -469,7 +512,12 @@ export class PrescriptionProcessingService
     if (!extraction) throw new NotFoundException("Prescription extraction not found");
     if (extraction.status === "confirmed") {
       return this.prisma.prescriptionExtraction.findFirst({
-        where: { id: extraction.id },
+        where: {
+          id: extraction.id,
+          documentId,
+          ownerId,
+          document: { ownerId, type: DocumentType.PRESCRIPTION },
+        },
         select: { documentId: true, status: true, confirmation: true, confirmedAt: true },
       });
     }
@@ -504,12 +552,22 @@ export class PrescriptionProcessingService
 
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.prescriptionExtraction.findFirst({
-        where: { id: extraction.id },
+        where: {
+          id: extraction.id,
+          documentId,
+          ownerId,
+          document: { ownerId, type: DocumentType.PRESCRIPTION },
+        },
         select: { id: true, status: true, confirmation: true },
       });
       if (current?.status === "confirmed") {
         return tx.prescriptionExtraction.findFirst({
-          where: { id: current.id },
+          where: {
+            id: current.id,
+            documentId,
+            ownerId,
+            document: { ownerId, type: DocumentType.PRESCRIPTION },
+          },
           select: { documentId: true, status: true, confirmation: true, confirmedAt: true },
         });
       }
@@ -542,7 +600,7 @@ export class PrescriptionProcessingService
       );
 
       const result = await tx.prescriptionExtraction.update({
-        where: { id: extraction.id },
+        where: { id: extraction.id, documentId, ownerId },
         data: {
           status: "confirmed",
           confirmation: { ...candidate, confirmedAt: now.toISOString() },
@@ -650,6 +708,45 @@ export class PrescriptionProcessingService
       if ("page" in source && source.page !== undefined && (typeof source.page !== "number" || Number.isNaN(source.page))) {
         throw new BadRequestException(`${fieldName}.source.page must be a number or null`);
       }
+      if (
+        "regionIndex" in source &&
+        source.regionIndex !== undefined &&
+        source.regionIndex !== null &&
+        (!Number.isInteger(source.regionIndex) ||
+          (source.regionIndex as number) < 0)
+      ) {
+        throw new BadRequestException(
+          `${fieldName}.source.regionIndex must be a non-negative integer or null`,
+        );
+      }
+      if ("boundingBox" in source && source.boundingBox !== undefined && source.boundingBox !== null) {
+        const box = source.boundingBox as Record<string, unknown>;
+        if (!box || typeof box !== "object" || !Array.isArray(box.points) || box.points.length !== 4) {
+          throw new BadRequestException(
+            `${fieldName}.source.boundingBox must contain four points`,
+          );
+        }
+        for (const point of box.points) {
+          if (!point || typeof point !== "object" || Array.isArray(point)) {
+            throw new BadRequestException(
+              `${fieldName}.source.boundingBox points must contain x and y coordinates`,
+            );
+          }
+          const coordinates = point as Record<string, unknown>;
+          if (
+            typeof coordinates.x !== "number" ||
+            !Number.isFinite(coordinates.x) ||
+            coordinates.x < 0 ||
+            typeof coordinates.y !== "number" ||
+            !Number.isFinite(coordinates.y) ||
+            coordinates.y < 0
+          ) {
+            throw new BadRequestException(
+              `${fieldName}.source.boundingBox points must contain non-negative finite coordinates`,
+            );
+          }
+        }
+      }
     }
     if (isConfirmation && field.value === null && fieldName === "prescriptionDate") {
       throw new BadRequestException("Prescription date is required for confirmation");
@@ -664,12 +761,12 @@ export class PrescriptionProcessingService
     startedAt: number,
   ) {
     const extraction = await this.prisma.prescriptionExtraction.findFirst({
-      where: { documentId },
+      where: { documentId, ownerId },
       select: { id: true },
     });
     if (!extraction) return null;
     const result = await this.prisma.prescriptionExtraction.update({
-      where: { id: extraction.id },
+      where: { id: extraction.id, documentId, ownerId },
       data: {
         status: "failed",
         candidate: Prisma.DbNull,

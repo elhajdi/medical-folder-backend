@@ -16,6 +16,8 @@ import {
 } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsInt,
@@ -36,6 +38,45 @@ class CandidateSourceDto {
   @IsInt()
   @Min(1)
   page?: number | null;
+
+  @ApiPropertyOptional({ type: Number, minimum: 0, nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  regionIndex?: number | null;
+
+  @ApiPropertyOptional({ type: () => CandidateBoundingBoxDto, nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CandidateBoundingBoxDto)
+  boundingBox?: CandidateBoundingBoxDto | null;
+}
+
+class CandidatePointDto {
+  @ApiPropertyOptional({ type: Number, minimum: 0 })
+  @IsNumber()
+  @Min(0)
+  x!: number;
+
+  @ApiPropertyOptional({ type: Number, minimum: 0 })
+  @IsNumber()
+  @Min(0)
+  y!: number;
+}
+
+class CandidateBoundingBoxDto {
+  @ApiPropertyOptional({
+    type: CandidatePointDto,
+    isArray: true,
+    minItems: 4,
+    maxItems: 4,
+  })
+  @IsArray()
+  @ArrayMinSize(4)
+  @ArrayMaxSize(4)
+  @ValidateNested({ each: true })
+  @Type(() => CandidatePointDto)
+  points!: CandidatePointDto[];
 }
 
 class CandidateFieldDto {
@@ -204,11 +245,7 @@ export class PrescriptionExtractionController {
     @Param("prescriptionId") prescriptionId: string,
     @Body() patch: PrescriptionCandidateReviewDto,
   ) {
-    return this.processing.reviewExtraction(
-      req.user.id,
-      prescriptionId,
-      patch,
-    );
+    return this.processing.reviewExtraction(req.user.id, prescriptionId, patch);
   }
 
   @Post(":prescriptionId/confirm")

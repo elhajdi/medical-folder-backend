@@ -12,6 +12,7 @@ import {
   DisabledOcrProvider,
   OCR_PROVIDER,
 } from "../prescription-processing/ocr-provider";
+import { PaddleOcrProvider } from "../prescription-processing/paddleocr-provider";
 @Module({
   imports: [PrismaModule, AuthModule, AuditModule],
   controllers: [
@@ -22,18 +23,21 @@ import {
   providers: [
     PrescriptionProcessingService,
     DisabledOcrProvider,
+    PaddleOcrProvider,
     {
       provide: OCR_PROVIDER,
-      useFactory: (disabledProvider: DisabledOcrProvider) => {
+      useFactory: (
+        disabledProvider: DisabledOcrProvider,
+        paddleOcrProvider: PaddleOcrProvider,
+      ) => {
         const configuredProvider = process.env.OCR_PROVIDER || "disabled";
-        if (configuredProvider !== "disabled") {
-          throw new Error(
-            "Only OCR_PROVIDER=disabled is supported until a reviewed provider is implemented",
-          );
-        }
-        return disabledProvider;
+        if (configuredProvider === "disabled") return disabledProvider;
+        if (configuredProvider === "paddleocr") return paddleOcrProvider;
+        throw new Error(
+          `Unsupported OCR_PROVIDER=${configuredProvider}; supported values are disabled and paddleocr`,
+        );
       },
-      inject: [DisabledOcrProvider],
+      inject: [DisabledOcrProvider, PaddleOcrProvider],
     },
   ],
 })

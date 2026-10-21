@@ -3,12 +3,17 @@ jest.mock("fs/promises", () => ({
   readFile: jest.fn().mockResolvedValue(Buffer.from("%PDF-1.7 synthetic")),
 }));
 
+import { Prisma } from "@prisma/client";
 import { describe, expect, it } from "@jest/globals";
 import { readFile } from "fs/promises";
 import { AuditService } from "../audit/audit.module";
 import { AuditAction, DocumentType } from "../common/domain-enums";
 import { PrismaService } from "../prisma/prisma.module";
-import { OcrProvider, OcrUnavailableError } from "./ocr-provider";
+import {
+  OcrProvider,
+  OcrProviderError,
+  OcrUnavailableError,
+} from "./ocr-provider";
 import { PrescriptionProcessingService } from "./prescription-processing.service";
 
 describe("PrescriptionProcessingService", () => {
@@ -48,7 +53,7 @@ describe("PrescriptionProcessingService", () => {
             id: "extraction-1",
             documentId: where.documentId ?? ownedDocument.id,
             status: data.status,
-            candidate: data.candidate,
+            candidate: data.candidate === Prisma.DbNull ? null : data.candidate,
             provider: "test-fake",
             providerVersion: "1",
             errorCategory: data.errorCategory,
@@ -63,6 +68,7 @@ describe("PrescriptionProcessingService", () => {
             where.errorCategory === "EXTRACTION_EXPIRED"
               ? null
               : {
+                  id: "extraction-1",
                   documentId: ownedDocument.id,
                   status: "needs_review",
                   provider: "test-fake",
@@ -105,6 +111,15 @@ describe("PrescriptionProcessingService", () => {
       },
       select: { id: true, storageKey: true, mimeType: true },
     });
+    expect(prisma.prescriptionExtraction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: "extraction-1",
+          documentId: ownedDocument.id,
+          ownerId: "owner-synthetic",
+        },
+      }),
+    );
     expect(provider.recognize).toHaveBeenCalledWith({
       bytes: Buffer.from("%PDF-1.7 synthetic"),
       mimeType: "application/pdf",
@@ -131,6 +146,60 @@ describe("PrescriptionProcessingService", () => {
     expect(prisma.medicationReminder.create).not.toHaveBeenCalled();
   });
 
+  it("persists region-level OCR confidence and source provenance in the review candidate", async () => {
+    provider.recognize = jest.fn().mockResolvedValue({
+      status: "completed",
+      languages: ["fr", "ar"],
+      modelVersion: "synthetic-model",
+      pages: [
+        {
+          page: 1,
+          text: "Medication: Synthetic medicine",
+          confidence: 0.8,
+          regions: [
+            {
+              text: "Medication: Synthetic medicine",
+              confidence: 0.93,
+              boundingBox: [
+                { x: 10, y: 20 },
+                { x: 200, y: 20 },
+                { x: 200, y: 50 },
+                { x: 10, y: 50 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    await service.process("owner-synthetic", ownedDocument.id);
+
+    expect(
+      prisma.prescriptionExtraction.update.mock.calls[0][0].data.candidate,
+    ).toMatchObject({
+      medications: [
+        {
+          name: {
+            value: "Synthetic medicine",
+            confidence: 0.93,
+            source: {
+              page: 1,
+              regionIndex: 0,
+              boundingBox: {
+                points: [
+                  { x: 10, y: 20 },
+                  { x: 200, y: 20 },
+                  { x: 200, y: 50 },
+                  { x: 10, y: 50 },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    });
+  });
+
   it("records an explicit safe failure when OCR is unavailable", async () => {
     provider.recognize = jest.fn().mockRejectedValue(new OcrUnavailableError());
 
@@ -153,6 +222,34 @@ describe("PrescriptionProcessingService", () => {
 
     expect(result.errorCategory).toBe("OCR_PROVIDER_ERROR");
     expect(JSON.stringify(result)).not.toContain("synthetic OCR payload");
+  });
+
+  it("records controlled PaddleOCR errors without persisting a candidate", async () => {
+    provider.recognize = jest
+      .fn()
+      .mockRejectedValue(new OcrProviderError("ENCRYPTED_PDF"));
+
+    const result = await service.process("owner-synthetic", ownedDocument.id);
+
+    expect(result.status).toBe("failed");
+    expect(result.errorCategory).toBe("ENCRYPTED_PDF");
+    expect(result.candidate).toBeNull();
+  });
+
+  it("does not expose an empty OCR result as a prescription candidate", async () => {
+    provider.recognize = jest.fn().mockResolvedValue({
+      status: "empty",
+      pages: [{ page: 1, text: "", confidence: null, regions: [] }],
+      languages: ["fr", "ar"],
+      modelVersion: "synthetic-model",
+    });
+
+    const result = await service.process("owner-synthetic", ownedDocument.id);
+
+    expect(result.status).toBe("failed");
+    expect(result.errorCategory).toBe("EMPTY_OCR_RESULT");
+    expect(result.candidate).toBeNull();
+    expect(prisma.medication.create).not.toHaveBeenCalled();
   });
 
   it("uses a unique document extraction and safely skips a duplicate in-flight retry", async () => {

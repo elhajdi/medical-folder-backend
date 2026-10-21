@@ -17,7 +17,7 @@ Base path: `/api/v1`; interactive OpenAPI: `/api/docs`.
 | GET          | `/prescriptions/:prescriptionId/extraction` | Yes  | Read the owner's unconfirmed prescription candidates                                 |
 | PATCH        | `/prescriptions/:prescriptionId/extraction` | Yes  | Correct the owner's unconfirmed candidate; does not create medication records        |
 | POST         | `/prescriptions/:prescriptionId/confirm`    | Yes  | Confirm a complete patient-reviewed candidate and create medication records          |
-| POST         | `/prescriptions/:prescriptionId/reject`     | Yes  | Reject the owner's unconfirmed prescription candidate                               |
+| POST         | `/prescriptions/:prescriptionId/reject`     | Yes  | Reject the owner's unconfirmed prescription candidate                                |
 | GET          | `/documents/:id/download`                   | Yes  | Download own document                                                                |
 | DELETE       | `/documents/:id`                            | Yes  | Delete own document metadata/file (physical-file cleanup needs production hardening) |
 | GET/POST     | `/medications`                              | Yes  | List/create own medication plans                                                     |
@@ -31,18 +31,25 @@ type, size, and file signature are checked. A prescription upload triggers
 inline processing and includes its safe processing state in the response.
 `needs_review` is never confirmation and does not create a medication plan or
 reminder. Candidate fields include field-level confidence and source page; any
-unknown or ambiguous field remains `null`. Confidence reflects the page score
-supplied by the OCR adapter, or is `null` when unavailable; it is not an
-independent clinical confidence score. `expiresAt` indicates the candidate
+unknown or ambiguous field remains `null`. Confidence reflects the OCR region
+score when region provenance is available, otherwise the page aggregate, or is
+`null` when unavailable; it is not an
+independent clinical confidence score. When available, candidate source also
+includes the zero-based OCR `regionIndex` and a four-point page-coordinate
+`boundingBox` in rendered-image pixels; coordinates and confidence describe OCR output, not a verified
+clinical fact. `expiresAt` indicates the candidate
 retention deadline. The status endpoint returns only provider/version, state,
 timestamps, retention deadline, and a safe error category. Candidates expire
 within 24 hours and expired records return no candidate.
 
-Until a reviewed OCR implementation is installed, `OCR_PROVIDER=disabled` is
-the only supported configuration. Processing then ends with `failed` and
-`OCR_UNAVAILABLE`; no OCR is claimed to have occurred. The disabled provider is
-not an OCR mock. A deterministic fake provider exists only in automated tests.
-Set `EXTRACTION_RETENTION_HOURS` to a positive value no greater than 24; the
+`OCR_PROVIDER=disabled` remains the default and processing ends with `failed`
+and `OCR_UNAVAILABLE`; no OCR is claimed to have occurred. The optional
+`OCR_PROVIDER=paddleocr` selection runs the self-hosted PaddleOCR 2.10.0 worker
+locally for PDF, JPEG, and PNG documents. It uses French and Arabic models,
+CPU by default, and explicit page, pixel, request, and startup limits; see
+README for installation and configuration. Unknown provider values fail
+application startup; no automatic provider fallback exists. Set
+`EXTRACTION_RETENTION_HOURS` to a positive value no greater than 24; the
 prototype defaults it to 24 hours.
 
 The Postman collection includes synthetic examples for candidate correction,
