@@ -29,15 +29,20 @@ an equivalent version manager before installing dependencies.
 ```bash
 cp .env.example .env
 # Change JWT_SECRET to a random secret of at least 32 characters.
-docker compose up -d postgres
+docker compose up -d postgres adminer
 npm install
 npx prisma generate
-npx prisma migrate dev --name init
+npx prisma migrate dev
 npm run start:dev
 ```
 
 API: `http://localhost:3000/api/v1/health`  
 Swagger: `http://localhost:3000/api/docs`
+
+For local database inspection, open Adminer at `http://localhost:8080` and
+sign in with system `PostgreSQL`, server `postgres`, and the database credentials
+configured in `docker-compose.yml`. Adminer is bound to localhost for development
+only; do not expose it or use real patient data.
 
 ## Quick smoke test
 
@@ -139,8 +144,12 @@ Install the optional Python runtime in a dedicated environment (Python 3.9+):
 ```bash
 python3 -m venv .venv-ocr
 . .venv-ocr/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements-ocr.txt
 ```
+
+The requirements file requires prebuilt wheels for OpenCV packages so pip does
+not try to compile OpenCV locally.
 
 Set `PADDLEOCR_PYTHON` to that environment's Python executable, then configure
 `OCR_PROVIDER=paddleocr`. The first worker startup downloads PaddleOCR models

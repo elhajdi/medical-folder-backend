@@ -10,3 +10,4 @@ __pycache__/
 prisma/**/*.db
 prisma/**/*.db-journal
 .vscode/
+.venv-ocr/
